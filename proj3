@@ -1,0 +1,293 @@
+/*
+    Code compiles and runs correctly.
+    Algorithms. Did not talk about handleOpen(). -4
+    Questions. -1
+    Extra credit +3
+    Total Score: 98/100
+*/
+/*  Project 3 Donald Wyand
+=====Algoritm for updating the table=====
+
+
+Create new LangList named tempList
+Create an int var named rows, set it to the row count of the table
+Create an int var named collumn, set it to the collumn count of the table
+Create an empty string named "name"
+Create an empty string named "desc"
+Create an empty int named "majorVersion"
+Create an empty string named "minorVersion"
+
+for each row as long as row < rows, adding to row on each iteration
+  for each collumn as long as col < cols, adding to cols on each iteration
+    Create new object named obj, set to table.getValueAt(row,col)
+    if col = 0
+      name = String of obj
+    else if col = 1
+      desc = String of obj
+    else if col = 2
+      majorVersion = Integer of obj
+    else if col = 3
+      minorVersion = String of obj
+    end of for loop
+  Create new Lang object,named lang, setting name, desc, majorVersion, minorVersion
+  add lang to tempList
+  end of for loop
+return tempList
+*/
+  /* 
+=====Algohithm for adding langs to Jtable=====
+
+Create a new dialog obj myDlg as a handle for the AddLangDialog
+Create a new string array = myDlg.run()
+if data[0] is not null
+  Strng name = the first box of data trimmed
+  Strng name = the second box of data trimmed
+  String name = the third box of data trimmed
+  Strng name = the fourth box of data trimmed
+  Create new int named MajorVersion, set it to the int of majVer
+  create new Lang obj named lang, setting it up with  (name,desc,MajorVersion,minorVersion)
+  add lang to myList
+  create new tableModel of updated myList
+  update tableModel using table.setModel on it
+*/
+/* 
+=====Algoritm for writing to JSON file to closing output file handle=====
+
+Create new empty JFileChooser obj named fileCH
+Create an int called userChoice = set it to fileCh.showSaveDialog(this)
+if userChoise = JFileChooser.APPROVE_OPTION
+  Set a new string filename to the path of the selected file via JFileChooser
+  Create a new file of filename, called f
+  set up fileWriter as fw
+  try block
+    set fileWriter to write to F
+  catch write errors
+    show error message
+  set up PrintWriter of outfile to fw
+  Create a new LangList with its values set to the return of getJTableValues()
+  Write newList, jsonified with toJSON() method to outfile
+  close outfile
+
+
+
+Questions:
+
+What are two reasons why JSON formatted files are useful for data storage? 
+
+1. The type of data stored meaning that you dont have to convert it for use
+2. Much more human readable as data is clearly listed with minimal tags as compared to CSV and XML files
+
+
+What are two advantages of a GUI program versus a console-based program? 
+
+1. GUI programs are much easier to use for the user
+2. No need to worry about typoing commands and can work much more faster in the GUI program than typing out commands
+*/
+
+
+import javax.swing.*;
+import java.awt.event.*;
+import java.awt.*;
+import java.io.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class Project3 extends JFrame implements ActionListener {
+    private LangTableModel tableModel;
+    private JTable table;
+    private LangList myList;
+    public Project3(String title) {
+        super(title);
+        setBounds(2000, 10, 700, 350);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        myList = new LangList();
+        table = new JTable();
+        table.setAutoCreateRowSorter(true);
+        tableModel = new LangTableModel(myList);
+        table.setModel(tableModel);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(680, 330));
+        JPanel panel = new JPanel();
+        panel.add(scrollPane);
+        add(panel, BorderLayout.CENTER);
+        initMenu();
+    }
+    public void actionPerformed(ActionEvent ae) {
+        String choice = ae.getActionCommand();
+        if (choice.equals("Quit")) {
+            System.exit(0);
+        }
+        else if (choice.equals("Open JSON")) {
+            handleOpen();
+        }
+        else if (choice.equals("Save JSON")) {
+            handleSave();
+        }
+        else if (choice.equals("Clear table")) {
+            myList = new LangList();
+            tableModel = new LangTableModel(myList);
+            table.setModel(tableModel);
+        }
+        else if (choice.equals("Add Lang")) {
+            handleAddLang();
+        }
+        else if (choice.equals("Demo open")) {
+            handleOpen1();
+        }
+        else if (choice.equals("Export XML")) {
+            handleExportXML();
+        }
+    }
+    public void initMenu() {
+        JMenuBar menuBar = new JMenuBar();
+        setJMenuBar(menuBar);
+        JMenu file = new JMenu("File");
+        JMenuItem open1 = new JMenuItem("Demo open");
+        open1.addActionListener(this);
+        file.add(open1);
+        JMenuItem open = new JMenuItem("Open JSON");
+        open.addActionListener(this);
+        file.add(open);
+        JMenuItem save = new JMenuItem("Save JSON"); 
+        save.addActionListener(this);
+        file.add(save);
+        JMenuItem exportXml = new JMenuItem("Export XML");
+        exportXml.addActionListener(this);
+        file.add(exportXml);
+        JMenuItem quit = new JMenuItem("Quit");
+        quit.addActionListener(this);
+        file.add(quit);
+        menuBar.add(file);
+        JMenu data = new JMenu("Data");
+        JMenuItem clear = new JMenuItem("Clear table");
+        clear.addActionListener(this);
+        data.add(clear);
+        JMenuItem addLang = new JMenuItem("Add Lang");
+        addLang.addActionListener(this);
+        data.add(addLang);
+        menuBar.add(data);
+    }
+
+    private void handleAddLang() {
+        AddLangDialog myDlg = new AddLangDialog(this);
+        //LangList myList = new LangList(); creating a new Lang List will wipe previous data
+        String[] data = myDlg.run();
+        if (data[0] != null) {
+            String name = data[0].trim();
+            String desc = data[1].trim();
+            String majVer = data[2].trim();
+            String minorVersion = data[3].trim();
+            int MajorVersion = Integer.parseInt(majVer);
+            Lang lang = new Lang(name,desc,MajorVersion,minorVersion);
+            myList.add(lang);
+            tableModel = new LangTableModel(myList);
+            table.setModel(tableModel);
+        }
+    }
+    private LangList getJTableValues() {
+        LangList tempList = new LangList();
+        int rows = tableModel.getRowCount();
+        int cols = tableModel.getColumnCount();
+        String name = "";
+        String desc = "";
+        int majorVersion = 0;
+        String minorVersion = "";
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                Object obj = table.getValueAt(row,col);
+                if (col == 0) {
+                    name = (String)obj;
+                }
+                else if (col == 1) {
+                    desc = (String)obj;
+                }
+                else if (col == 2) {
+                    Integer myInteger = (Integer)obj;
+                    majorVersion = myInteger.intValue();
+                }
+                else if (col == 3) {
+                    minorVersion = (String)obj;
+                }
+            }
+            Lang lang = new Lang(name, desc, majorVersion, minorVersion);
+            tempList.add(lang);
+        }
+        return tempList;
+    }
+
+    private void handleSave() {
+        JFileChooser fileCh = new JFileChooser(".");
+        int userChoice = fileCh.showSaveDialog(this);
+        if (userChoice == JFileChooser.APPROVE_OPTION) {
+            String filename = fileCh.getSelectedFile().getAbsolutePath();
+            File f = new File(filename);
+            FileWriter fw = null;
+            try {
+                fw = new FileWriter(f);
+            }
+            catch (IOException e) {
+                JOptionPane.showMessageDialog(this, 
+                    "File could not be saved");
+            }
+            PrintWriter outfile = new PrintWriter(fw);
+            LangList newList = getJTableValues();
+            outfile.println(newList.toJSON());
+            outfile.close();
+        }
+    }
+    private void handleExportXML() {
+        JFileChooser fileCh = new JFileChooser(".");
+        int userChoice = fileCh.showSaveDialog(this);
+        if (userChoice == JFileChooser.APPROVE_OPTION) {
+            String filename = fileCh.getSelectedFile().getAbsolutePath();
+            File f = new File(filename);
+            FileWriter fw = null;
+            try {
+                fw = new FileWriter(f);
+            }
+            catch (IOException e) {
+                JOptionPane.showMessageDialog(this, 
+                    "File could not be saved");
+            }
+            PrintWriter outfile = new PrintWriter(fw);
+            LangList newList = getJTableValues();
+            outfile.println(newList.toXML());
+            outfile.close();
+        }
+    }
+    private void handleOpen() {
+        JFileChooser fileCh = new JFileChooser(".");
+        int userChoice = fileCh.showOpenDialog(this);
+        if (userChoice == JFileChooser.APPROVE_OPTION) {
+            String filename = 
+                fileCh.getSelectedFile().getAbsolutePath();
+            File f = new File(filename);
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                myList  = mapper.readValue(
+                    f, LangList.class);
+            }
+            catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "could not open file");
+            }
+            tableModel = new LangTableModel(myList);
+            table.setModel(tableModel);
+        }
+    }
+    private void handleOpen1() {
+        File f = new File("langs.json");
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            myList = mapper.readValue(
+                f, LangList.class);
+        }
+        catch (IOException e) {
+            JOptionPane.showMessageDialog(this,"Error opening langs.json");
+        }
+        tableModel = new LangTableModel(myList);
+        table.setModel(tableModel);
+    }
+    public static void main(String[] args) {
+        Project3 myApp = new Project3("Project3");
+        myApp.setVisible(true);
+    }
+}
